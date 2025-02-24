@@ -237,6 +237,6 @@ void loop() {
 
     clickCount = 0;
   }
-*/
+*///
   delay(100);
 }
