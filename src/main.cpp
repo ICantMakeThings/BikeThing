@@ -40,6 +40,11 @@ https://github.com/ICantMakeThings/Nicenano-NRF52-Supermini-PlatformIO-Support
 #include <Adafruit_BME280.h>
 #include <bluefruit.h> 
 #include "RTClib.h"
+#include <TinyGPSPlus.h>
+
+static const uint32_t GPSBaud = 9600;
+
+TinyGPSPlus gps;
 
 RTC_DS3231 rtc;
 
@@ -96,13 +101,12 @@ void setup() {
   Serial.println("Adver,");
   Bluefruit.Advertising.start(0);
 
-
-
-
   unsigned status;
 
+  pinMode(SWL, INPUT_PULLDOWN);
+  pinMode(SWR, INPUT_PULLDOWN);
+  pinMode(SWEXT, INPUT_PULLDOWN);
   pinMode(LIGHT, INPUT_PULLDOWN);
-
 
   if (! rtc.begin()) {
     Serial.println("Couldn't find RTC");
@@ -127,7 +131,7 @@ void setup() {
   bme.begin(BME280_I2C_ADDRESS);
 
   //status = bme.begin();  
-  
+  Serial1.begin(GPSBaud);
   //analogReadResolution(10); // 10-bit ADC
   
   SPI.begin(); //SPI.begin(SCK_PIN, -1, MOSI_PIN);
@@ -145,6 +149,8 @@ void setup() {
     display.print("Hello");
   } while (display.nextPage()); //todo - add qrcode to link git when powered off & welcome screen.
 }
+
+
 
 void loop() {
   float temperature = bme.readTemperature();
@@ -185,24 +191,34 @@ void loop() {
     display.drawLine(10, 100, 280, 100, GxEPD_BLACK);
 
     display.setTextSize(1);
-    display.setCursor(10, 120);
+    display.setCursor(5, 120);
     display.print("Temp: ");
     display.print(temperature, 1);
     display.print(" C");
 
-    display.setCursor(10, 150);
+    display.setCursor(5, 150);
     display.print("Humidity: ");
     display.print(humidity, 1);
     display.print(" %");
 
-    display.setCursor(10, 180);
+    display.setCursor(5, 180);
     display.print("Pressure: ");
     display.print(pressure, 1);
     display.print(" hPa");
 
+    display.setCursor(5, 200);
+    display.print("LAT: ");
+    display.print(gps.location.lat(), 6);
+
+    display.setCursor(5, 210);
+    display.print("LNG: ");
+    display.print(gps.location.lng(), 6);
+
   } while (display.nextPage());
-/*
-  if (digitalRead(SWEXT) == LOW) {
+  
+
+
+  if (digitalRead(SWEXT) == HIGH) {
     unsigned long pressTime = millis();
     
     if (pressTime - lastPressTime > multiClickTime) {
@@ -213,19 +229,19 @@ void loop() {
 
     lastPressTime = pressTime;
 
-    while (digitalRead(SWEXT) == LOW);
+    if (digitalRead(SWEXT) == HIGH);
     delay(50);
   }
 
   if (millis() - lastPressTime > multiClickTime && clickCount > 0) {
     if (clickCount == 1) {
-      Serial.println("Pause");
-      blehid.consumerKeyPress(HID_USAGE_CONSUMER_PLAY_PAUSE);
+      Serial.println("Next Track");
+      blehid.consumerKeyPress(HID_USAGE_CONSUMER_SCAN_NEXT);
       delay(100);
       blehid.consumerKeyRelease();
     } else if (clickCount == 2) {
-      Serial.println("Next Track");
-      blehid.consumerKeyPress(HID_USAGE_CONSUMER_SCAN_NEXT);
+      Serial.println("Pause");
+      blehid.consumerKeyPress(HID_USAGE_CONSUMER_PLAY_PAUSE);
       delay(100);
       blehid.consumerKeyRelease();
     } else if (clickCount == 3) {
@@ -237,6 +253,6 @@ void loop() {
 
     clickCount = 0;
   }
-*///
+
   delay(100);
 }
